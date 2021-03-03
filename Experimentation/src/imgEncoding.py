@@ -1,12 +1,13 @@
 import os
 import numpy as np
 import cv2
-import matplotlib.pylab as plt
-# from bagoftools.logger import Logger
+import logging
 
 import torch
 
 from models.cae_32x32x32_zero_pad_bin import CAE
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 def imgTransformer(inputFolder,name):
     print(name)
@@ -17,22 +18,25 @@ def imgTransformer(inputFolder,name):
     img = np.pad(image, pad, mode="edge") / 255.0
     img = np.transpose(img, (2, 0, 1))
     img = torch.from_numpy(img).float()
-    print(img.shape)
+    
     patches = np.reshape(img, (3, 6, 128, 10, 128))
     patches = np.transpose(patches, (0, 1, 3, 2, 4))
+    
+    logging.info(f'The image {name} is patched and tensored!')
     
     return img,patches,name
     
 
 def imgPreprocess(inputFolder):
-    print(f'The input folder specified is {str(inputFolder)}')
-    img,patch,name = [],[],[]
-    for images in os.listdir(inputFolder):
-        img.append(imgTransformer(inputFolder,images)[0].numpy())
-        patch.append(imgTransformer(inputFolder,images)[1].numpy())
+    patch = torch.empty(len(os.listdir(inputFolder)),3,6,10,128,128)
+    img = torch.empty(len(os.listdir(inputFolder)),3,768,1280)
+    name = []
+    for idx,images in enumerate(os.listdir(inputFolder)):
+        img[idx]=imgTransformer(inputFolder,images)[0]
+        patch[idx]=imgTransformer(inputFolder,images)[1]
         name.append(imgTransformer(inputFolder,images)[2])
-    img = np.array(img)
-    patch = np.array(patch)
+    
+    logging.info('All the images are processed')
     
     return img,patch,name
 
@@ -45,55 +49,52 @@ def imgEncoding(name,patches,checkpoint,interFolder):
     encoder.to(device)
     
     for idx,patcher in enumerate(patches):
-        out=[]
         name[idx] = name[idx].split('.')[0]
-        patch = torch.tensor(patcher).to(device)
-        print('the patch shape is:',patch.shape)
+        logging.info(f'Doing for {name[idx]}')
         out = torch.zeros(6,10, 32, 32, 32)
         for i in range(6):
             for j in range(10):
-                x = patch[None,:, i, j, :, :]
+                x = patcher[None,:, i, j, :, :].to(device)
                 y = encoder(x)
-                # print('The shape is y',y.shape)
                 out[i,j]=y.data
-        # print('the output final shapoe is:',out.shape)
-        # out = np.array(out)
         torch.save(out,os.path.join(interFolder,str(name[idx])+'.pt'))
-        
-    # logger.info('The images are encoded and saved') 
+    
+    logging.info('Images are encoded')
     
     return encoder
 
 def imgDetransformation(img):
     out = np.transpose(img, (0, 3, 1, 4, 2))
-    out = np.reshape(img, (768, 1280, 3))
-    # out = np.transpose(out, (2, 0, 1))
-    return out
+    out = np.reshape(out, (768, 1280, 3))
+    return out.detach().numpy()
 
 def imgDeymstify(inFolder,outFolder,model):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu' 
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'  
+    model.to(device)
     torch.cuda.empty_cache()
-    for encoded in os.listdir(inFolder):
+    
+    for idx,encoded in enumerate(os.listdir(inFolder)):
         imgEncoded = torch.load(os.path.join(inFolder,encoded))
-        imgEncoded = torch.tensor(imgEncoded).to(device)
-        # imgEncoded = imgEncoded.squeeze(1)
+        imgEncoded = imgEncoded.to(device)
+        print(f'the name is {encoded} and the type is {type(encoded)} and the output is initialized')
         out = torch.zeros(6,10, 3, 128, 128)
         for i in range(6):
             for j in range(10):
-                result = model.decode(imgEncoded[i][j].unsqueeze(0))
+                result = model.decode(imgEncoded[i,j,:,:,:].unsqueeze(0))
                 out[i,j] = result.data
-        print('the outut is',out.shape)
-        out = imgDetransformation(out.detach().cpu().numpy())
-        print(out.shape)
-        plt.imshow(out)
-        plt.show()
+        out1 = imgDetransformation(out)
+        norm_image = cv2.normalize(out1, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype = cv2.CV_32F)
+        norm_image = norm_image.astype(np.uint8)
+        cv2.imwrite(os.path.join(outFolder,str(idx)+'.png'),norm_image)
+        del(out)
+        print('===============================================================================================')
         
-    
 
 if __name__ == '__main__':
     outputFolder = r'../output'
     inputFolder  = r'../input'
     interFolder  = r'../intermediate'
+    checkpoint   = r'../checkpoint/model_final.state'
     
     os.makedirs(outputFolder, exist_ok=True)
     os.makedirs(inputFolder, exist_ok=True)
@@ -101,7 +102,7 @@ if __name__ == '__main__':
     
     images,patches,names = imgPreprocess(inputFolder)
     print(patches.shape)
-    model = imgEncoding(names,patches,r'../checkpoint/model_final.state',interFolder)
+    model = imgEncoding(names,patches,checkpoint,interFolder)
     imgDeymstify(interFolder,outputFolder,model)
     
     
