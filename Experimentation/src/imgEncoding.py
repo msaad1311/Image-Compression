@@ -35,7 +35,6 @@ def imgPreprocess(inputFolder):
         img[idx]=imgTransformer(inputFolder,images)[0]
         patch[idx]=imgTransformer(inputFolder,images)[1]
         name.append(imgTransformer(inputFolder,images)[2])
-    
     logging.info('All the images are processed')
     
     return img,patch,name
