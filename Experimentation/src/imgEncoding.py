@@ -93,7 +93,7 @@ if __name__ == '__main__':
     outputFolder = r'../output'
     inputFolder  = r'../input'
     interFolder  = r'../intermediate'
-    checkpoint   = r'../checkpoint/model_final.state'
+    checkpoint   = r'../checkpoint/pruned_weights.state'
     
     os.makedirs(outputFolder, exist_ok=True)
     os.makedirs(inputFolder, exist_ok=True)
