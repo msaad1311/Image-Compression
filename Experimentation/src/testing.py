@@ -1,20 +1,59 @@
+import argparse
+import os
+import matplotlib.pyplot as plt
+
 import numpy as np
-import torch
-import pickle
-from models.cae_32x32x32_zero_pad_bin import CAE
+from PIL import Image
+from skimage.io import imsave
 
-# model = CAE()
-# model.load_state_dict(torch.load(r'../checkpoint\model_final.state'))
-# for params in model.parameters():
-#     print(params)
-#     break
-# print(model.parameters)
-thr = 0.001
-sd = torch.load(r'../checkpoint\model_final.state')  # load the state dicd
-for k in sd.keys():
-  if not 'weight' in k:
-    continue  # skip biases and other saved parameters
-  w = sd[k]
+in_img=r'image.png'
+ws=12
 
-  sd[k] = w * (abs(w) > 0.1*torch.max(abs(w)))  # set to zero weights smaller than thr 
-torch.save(sd, r'../checkpoint/pruned_weights.state')
+def lin_interp(n, p1, p2):
+    x = np.zeros((n, p1.shape[0], 128, 3))
+
+    for i in range(n):
+        a = (i + 1) / (n + 1)
+        x[i] = (1 - a) * p1 + a * p2
+
+    return x
+
+
+_name, _ext = os.path.splitext(in_img)
+out_img = f"{_name}_s{ws}{_ext}"
+
+
+in_img1 = np.array(Image.open(in_img)) / 255.0
+orig_img = in_img1[24:-24, :1280, :]  # left image, remove borders
+in_img2 = in_img1[:, 1280:, :]  # right image
+
+# print(in_img)
+# # 6,10,128,128,3
+patches = np.reshape(in_img1, (6, 128, 10, 128, 3))
+patches = np.transpose(patches, (0, 2, 1, 3, 4))
+
+h = ws // 2
+
+for i in range(5):
+    p1 = patches[i, :, 128 - h, :, :]
+    p2 = patches[i + 1, :, h, :, :]
+
+    x = lin_interp(ws, p1, p2)
+    patches[i, :, 128 - h :, :, :] = np.transpose(x[:h, :, :, :], (1, 0, 2, 3))
+    patches[i + 1, :, :h, :, :] = np.transpose(x[h:, :, :, :], (1, 0, 2, 3))
+
+for j in range(9):
+    p3 = patches[:, j, :, 128 - h, :]
+    p4 = patches[:, j + 1, :, h, :]
+
+    x = lin_interp(ws, p3, p4)
+    patches[:, j, :, 128 - h :, :] = np.transpose(x[:h, :, :, :], (1, 2, 0, 3))
+    patches[:, j + 1, :, :h, :] = np.transpose(x[h:, :, :, :], (1, 2, 0, 3))
+
+out = np.transpose(patches, (0, 2, 1, 3, 4))
+out = np.reshape(out, (768, 1280, 3))
+out = out[24:-24, :, :]
+plt.imshow(out)
+plt.show()
+# out = np.concatenate((orig_img, out), axis=1)
+imsave('out_img.png', out)
