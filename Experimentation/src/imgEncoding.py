@@ -2,7 +2,7 @@ import os
 import numpy as np
 import cv2
 import logging
-
+import smoothing as sm
 import torch
 
 from models.cae_32x32x32_zero_pad_bin import CAE
@@ -83,6 +83,7 @@ def imgDeymstify(inFolder,outFolder,model,name):
                 result = model.decode(imgEncoded[i,j,:,:,:].unsqueeze(0))
                 out[i,j] = result.data
         out1 = imgDetransformation(out)
+        out1 = sm.smooth(out1,7)
         norm_image = cv2.normalize(out1, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype = cv2.CV_32F)
         norm_image = norm_image.astype(np.uint8)
         cv2.imwrite(os.path.join(outFolder,str(idx)+'.png'),norm_image)
@@ -94,7 +95,7 @@ if __name__ == '__main__':
     outputFolder = r'../output'
     inputFolder  = r'../input'
     interFolder  = r'../intermediate'
-    checkpoint   = r'../checkpoint/pruned_weights.state'
+    checkpoint   = r'../checkpoint/model_final.state'
     
     os.makedirs(outputFolder, exist_ok=True)
     os.makedirs(inputFolder, exist_ok=True)
