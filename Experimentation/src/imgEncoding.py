@@ -67,12 +67,14 @@ def imgDetransformation(img):
     out = np.reshape(out, (768, 1280, 3))
     return out.detach().numpy()
 
-def imgDeymstify(inFolder,outFolder,model):
+def imgDeymstify(inFolder,outFolder,model,name):
+    print(name)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'  
     model.to(device)
     torch.cuda.empty_cache()
     
     for idx,encoded in enumerate(os.listdir(inFolder)):
+        print(idx)
         imgEncoded = torch.load(os.path.join(inFolder,encoded))
         imgEncoded = imgEncoded.to(device)
         print(f'the name is {encoded} and the type is {type(encoded)} and the output is initialized')
@@ -84,7 +86,7 @@ def imgDeymstify(inFolder,outFolder,model):
         out1 = imgDetransformation(out)
         norm_image = cv2.normalize(out1, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype = cv2.CV_32F)
         norm_image = norm_image.astype(np.uint8)
-        cv2.imwrite(os.path.join(outFolder,str(idx)+'.png'),norm_image)
+        cv2.imwrite(os.path.join(outFolder,str(name[idx])+'.png'),norm_image)
         del(out)
         print('===============================================================================================')
         
@@ -102,6 +104,6 @@ if __name__ == '__main__':
     images,patches,names = imgPreprocess(inputFolder)
     print(patches.shape)
     model = imgEncoding(names,patches,checkpoint,interFolder)
-    imgDeymstify(interFolder,outputFolder,model)
+    imgDeymstify(interFolder,outputFolder,model,names)
     
     
