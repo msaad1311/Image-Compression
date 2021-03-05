@@ -48,7 +48,6 @@ def imgEncoding(name,patches,checkpoint,interFolder):
     encoder.to(device)
     
     for idx,patcher in enumerate(patches):
-        name[idx] = name[idx].split('.')[0]
         logging.info(f'Doing for {name[idx]}')
         out = torch.zeros(6,10, 32, 32, 32)
         for i in range(6):
@@ -86,7 +85,7 @@ def imgDeymstify(inFolder,outFolder,model,name):
         out1 = imgDetransformation(out)
         norm_image = cv2.normalize(out1, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype = cv2.CV_32F)
         norm_image = norm_image.astype(np.uint8)
-        cv2.imwrite(os.path.join(outFolder,str(name[idx])+'.png'),norm_image)
+        cv2.imwrite(os.path.join(outFolder,str(idx)+'.png'),norm_image)
         del(out)
         print('===============================================================================================')
         

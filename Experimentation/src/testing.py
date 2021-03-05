@@ -16,5 +16,5 @@ for k in sd.keys():
     continue  # skip biases and other saved parameters
   w = sd[k]
 
-  sd[k] = w * (abs(w) > 0.05*torch.max(abs(w)))  # set to zero weights smaller than thr 
+  sd[k] = w * (abs(w) > 0.1*torch.max(abs(w)))  # set to zero weights smaller than thr 
 torch.save(sd, r'../checkpoint/pruned_weights.state')

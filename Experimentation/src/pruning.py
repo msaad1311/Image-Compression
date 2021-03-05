@@ -1,6 +1,10 @@
+from os import path
 import numpy as np
 import os
 import cv2
+import gc
+import time
+from skimage.metrics import structural_similarity as ssim
 
 import torch
 import imgEncoding as im
@@ -15,38 +19,73 @@ def applyPruning(percentage,weightPath):
         w = sd[k]
         sd[k] = w * (abs(w) > percentage*torch.max(abs(w)))  # set to zero weights smaller than thr 
     torch.save(sd, r'../checkpoint/pruned_weights.state')
-    return
 
-def videoCreator(output,name,videoObj):
-    image = cv2.imread(os.path.join(output,name))
-    
-    return
+def metric(im1,im2):
+    result = ssim(im1,im2,multichannel=True)
+    return round(result,2)
     
 
-pruningPercentage = [1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1,0.0]
-originalWeight = r'../checkpoint\model_final.state'
+pruningPercentage = [1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1,0.05,0.025,0.0125,0]
+originalWeight = r'../checkpoint/model_final.state'
 prunedWeight = r'../checkpoint/pruned_weights.state'
 singleOutput = r'../singleOutput'
 singleInput  = r'../singleInput'
 singleInter  = r'../singleInter'
+fileName = r'femaleActress.jpg'
 
 os.makedirs(singleOutput, exist_ok=True)
 os.makedirs(singleInput, exist_ok=True)
 os.makedirs(singleInter, exist_ok=True)
 
+img,timer,index = [],[],[]
 for percent in pruningPercentage:
     print(f'========================= Working for {percent}================================')
     applyPruning(percent,originalWeight)
+    stime = time.time()
     images,patches,names = im.imgPreprocess(singleInput)
-    print(names)
-    names = str(names[0].split('.')[0])+str(percent) +'.'+ str(names[0].split('.')[1])
-    model = im.imgEncoding([names],patches,prunedWeight,singleInter)
-    im.imgDeymstify(singleInter,singleOutput,model,[names])
+    model = im.imgEncoding(names,patches,prunedWeight,singleInter)
+    im.imgDeymstify(singleInter,singleOutput,model,names)
     fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-    video = cv2.VideoWriter('./noise.avi', fourcc, 15.0, (1280, 768))
-    img = cv2.imread(os.path.join(singleOutput,names))
-    print(img.shape)
-    video.write(img)
+    video = cv2.VideoWriter('./animation.avi', fourcc, 1, (1280, 768))
+    
+    originalImage = cv2.imread(os.path.join(singleInput,fileName))
+    pad = ((24, 24), (0, 0), (0, 0))
+    originalImage = np.pad(originalImage, pad, mode="edge")
+    generateImage = cv2.imread(os.path.join(singleOutput,'0.png'))
+   
+    index.append(metric(originalImage,generateImage))
+    img.append(generateImage)
+    os.remove(prunedWeight)
+    gc.collect()
+    timer.append(time.time()-stime)
+    
+for i in range(len(img)):
+    font = cv2.FONT_HERSHEY_SIMPLEX 
+  
+    # Use putText() method for 
+    # inserting text on video 
+    cv2.putText(img[i],  
+                'Pruning Percentage:'+ str(pruningPercentage[i]*100)+'%',  
+                (50, 50),  
+                font, 1,  
+                (0, 0, 0),  
+                2,  
+                cv2.LINE_4) 
+    cv2.putText(img[i],  
+            'Time taken:'+ str(round(timer[i],2)),  
+            (50, 100),  
+            font, 1,  
+            (0, 0, 0),  
+            2,  
+            cv2.LINE_4) 
+    cv2.putText(img[i],  
+        'Similarity Index:'+str(index[i]),  
+        (50, 150),  
+        font, 1,  
+        (0, 0, 0),  
+        2,  
+        cv2.LINE_4) 
+    video.write(img[i])
 
 video.release()
     
