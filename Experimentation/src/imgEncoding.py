@@ -83,7 +83,7 @@ def imgDeymstify(inFolder,outFolder,model,name):
                 result = model.decode(imgEncoded[i,j,:,:,:].unsqueeze(0))
                 out[i,j] = result.data
         out1 = imgDetransformation(out)
-        out1 = sm.smooth(out1,7)
+        out1 = sm.smooth(out1,6)
         norm_image = cv2.normalize(out1, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype = cv2.CV_32F)
         norm_image = norm_image.astype(np.uint8)
         cv2.imwrite(os.path.join(outFolder,str(idx)+'.png'),norm_image)

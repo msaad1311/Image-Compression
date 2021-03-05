@@ -52,11 +52,9 @@ for percent in pruningPercentage:
     im.imgDeymstify(singleInter, singleOutput, model, names)
 
     fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-    video = cv2.VideoWriter('./animation.avi', fourcc, 1, (1280, 768))
+    video = cv2.VideoWriter('./animation.avi', fourcc, 1, (1280, 720))
 
     originalImage = cv2.imread(os.path.join(singleInput, fileName))
-    pad = ((24, 24), (0, 0), (0, 0))
-    originalImage = np.pad(originalImage, pad, mode="edge")
     generateImage = cv2.imread(os.path.join(singleOutput, '0.png'))
 
     index.append(metric(originalImage, generateImage))
