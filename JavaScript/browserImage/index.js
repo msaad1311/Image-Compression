@@ -1,3 +1,5 @@
+// The base code is taken from the link : https://github.com/Donaldcwl/browser-image-compression
+
 function starter() {
 
     // Grab elements, create settings, etc.
