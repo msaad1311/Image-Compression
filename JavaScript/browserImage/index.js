@@ -1,29 +1,3 @@
-// async function handleImageUpload(event) {
-
-//     const imageFile = event.target.files[0];
-//     console.log(typeof (imageFile))
-//     console.log(imageFile)
-//     console.log('originalFile instanceof Blob', imageFile instanceof Blob); // true
-//     console.log(`originalFile size ${imageFile.size / 1024 / 1024} MB`);
-
-//     const options = {
-//         maxSizeMB: 1,
-//         maxWidthOrHeight: 180,
-//         useWebWorker: true
-//     }
-//     try {
-//         const compressedFile = await imageCompression(imageFile, options);
-//         console.log('compressedFile instanceof Blob', compressedFile instanceof Blob); // true
-//         console.log(`compressedFile size ${compressedFile.size / 1024 / 1024} MB`); // smaller than maxSizeMB
-//         console.log(compressedFile)
-
-//         await uploadToServer(compressedFile); // write your own logic
-//     } catch (error) {
-//         console.log(error);
-//     }
-
-// }
-
 function starter() {
 
     // Grab elements, create settings, etc.
@@ -66,13 +40,9 @@ async function compressor(blob) {
     try {
         var canvas = document.getElementById("output")
         var ctx = canvas.getContext("2d")
-        var myFile = new File([blob], "name.jpg");
-        console.log('see this:', myFile)
         const compressedFile = await imageCompression(blob, options);
         console.log('compressedFile instanceof Blob', compressedFile instanceof Blob); // true
         console.log(`compressedFile size ${compressedFile.size / 1024 / 1024} MB`); // smaller than maxSizeMB
-        console.log(typeof (compressedFile))
-        console.log(compressedFile)
         // displaying the blob on the canvas
         var reader = new FileReader();
         reader.readAsDataURL(compressedFile);
@@ -83,8 +53,6 @@ async function compressor(blob) {
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
             }
             img.src = base64data
-            // console.log(base64data)
-            // compressor(base64data);     
         }
         console.log('completed')
 
