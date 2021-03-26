@@ -22,10 +22,58 @@ async function handleImageUpload(event) {
 
 }
 
+// Grab elements, create settings, etc.
 var video = document.getElementById('video');
+
+// Get access to the camera!
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    // Not adding `{ audio: true }` since we only want video now
     navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
-        video.src = window.URL.createObjectURL(stream);
+        //video.src = window.URL.createObjectURL(stream);
+        video.srcObject = stream;
+        const track = stream.getVideoTracks()[0];
+        imageCapture = new ImageCapture(track);
+        imageCapture.takePhoto().then(function (blob) {
+            console.log('hello there')
+            console.log(blob)
+            console.log('bye there')
+            compressor(blob);
+        }).catch(function (error) {
+            console.log('takePhoto() error: ', error);
+        });
         video.play();
     });
+}
+
+async function compressor(blob) {
+    console.log('originalFile instanceof Blob', blob instanceof Blob); // true
+    console.log(`originalFile size ${blob.size / 1024 / 1024} MB`);
+
+    const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true
+    }
+    try {
+        console.log(blob)
+        var img = document.createElement("img")
+        img.src = URL.createObjectURL(blob)
+        console.log(img)
+        var canvas = document.getElementById("output")
+        var ctx = canvas.getContext("2d")
+        const compressedFile = await imageCompression(blob, options);
+        console.log('compressedFile instanceof Blob', compressedFile instanceof Blob); // true
+        console.log(`compressedFile size ${compressedFile.size / 1024 / 1024} MB`); // smaller than maxSizeMB
+        console.log(typeof (compressedFile))
+        console.log(compressedFile)
+        // displaying the blob on the canvas
+        var img = document.createElement("img")
+        img.src = URL.createObjectURL(blob)
+        console.log(img)
+        ctx.drawImage(img,0,0)
+        console.log('completed')
+
+    } catch (error) {
+        console.log(error);
+    }
 }
