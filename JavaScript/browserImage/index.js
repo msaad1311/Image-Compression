@@ -34,10 +34,8 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const track = stream.getVideoTracks()[0];
         imageCapture = new ImageCapture(track);
         imageCapture.takePhoto().then(function (blob) {
-            console.log('hello there')
             console.log(blob)
-            console.log('bye there')
-            compressor(blob);
+            compressor(blob);        
         }).catch(function (error) {
             console.log('takePhoto() error: ', error);
         });
@@ -55,10 +53,6 @@ async function compressor(blob) {
         useWebWorker: true
     }
     try {
-        console.log(blob)
-        var img = document.createElement("img")
-        img.src = URL.createObjectURL(blob)
-        console.log(img)
         var canvas = document.getElementById("output")
         var ctx = canvas.getContext("2d")
         const compressedFile = await imageCompression(blob, options);
@@ -68,8 +62,12 @@ async function compressor(blob) {
         console.log(compressedFile)
         // displaying the blob on the canvas
         var img = document.createElement("img")
-        img.src = URL.createObjectURL(blob)
-        console.log(img)
+        var reader = new FileReader();
+        reader.readAsDataURL(compressedFile); 
+        reader.onloadend = function() {
+            var base64data = reader.result;   
+            img.src = URL.createObjectURL(base64data)             
+        }
         ctx.drawImage(img,0,0)
         console.log('completed')
 
