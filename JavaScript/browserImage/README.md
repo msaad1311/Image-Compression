@@ -16,6 +16,8 @@ The application can be used simply by cloning the repo and just clicking on `ind
 ## Demo
 The following video is the demonstration of orignal and reconstructed stream. 
 
+
+
 As evident there is minimal deterioration in the quality of the results. The following screenshot highlights the sizes of the original image and reconstructed image.
 
 The numbers indicate that there is a reduction of % in the image size without degradation in the quality.
